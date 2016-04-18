@@ -1,7 +1,7 @@
 # pcf-demo-docs
 
 This document describes the architecture as well as the two main workflows of the PCF Demo application. The demo shall test PWS itself and the marketplace services ClearDB MySQL, 
-Memcached Cloud Memcached and the Autoscaler. The used approaches may not reflect a sound production setup and were chosen for simplicity.
+Memcached Cloud Memcached and the App Autoscaler. The used approaches may not reflect a sound production setup and were chosen for simplicity.
 
 ## Overall Architecture
 
@@ -30,16 +30,28 @@ After the request run is over the workflow can be triggered again. The data of f
 ### Data Structures
 
 #### Trigger information (exchanged via Memcached)
-workInProgress -> True or False -> Lock to prevent the user from triggering more than one request run at once
-amountOfCalls -> Integer value -> How many calls shall be made for the next run?
-destinationURL -> URL -> Which URL shall be called via HTTP GET calls?
+* workInProgress -> True or False -> Lock to prevent the user from triggering more than one request run at once
+* amountOfCalls -> Integer value -> How many calls shall be made for the next run?
+* destinationURL -> URL -> Which URL shall be called via HTTP GET calls?
 
 #### Request Run Data Persistence
-ID -> INT(11) -> autoincrement ID, database primary key
-timestamp -> INT(11) -> start timestamp of the request run
-current_request_count -> INT(11) -> counter to be updated during the request run (+1 per call)
-max_possible_count -> INT(11) -> maximum value of request calls (relates to amountOfCalls)
+* ID -> INT(11) -> autoincrement ID, database primary key
+* timestamp -> INT(11) -> start timestamp of the request run
+* current_request_count -> INT(11) -> counter to be updated during the request run (+1 per call)
+* max_possible_count -> INT(11) -> maximum value of request calls (relates to amountOfCalls)
 
 
 ## CPU Load Worker Workflow
+The purpose of the CPU Load Worker is to test the App Autoscaler addon, which shall scale the amount of running instances based on (CPU) load. Therefore lower and upper CPU load
+thresholds for an app are set. The app instances shall scale up (upper threshold) or scale down (lower threshold). The idea is to always have an elastic, responsive app while 
+potentially saving money in times with lower demand.
+ 
+Basically the CPU Load Worker generates useless CPU load when switched on. After time the App Autoscaler addon should scale up or down. The user can switch the behavior (ON or OFF)
+via web interface 'Autoscaler View'. The trigger information is stored and communicated via the attached Memcached store.
+
 ![CPU Load Worker Workflow](pcf-demo-cpuload-worker-workflow.png)
+
+### Data Structures
+
+#### Trigger information (exchanged via Memcached)
+* CPULoad -> ON or OFF -> switch CPU load ON or OFF
